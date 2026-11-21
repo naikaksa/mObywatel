@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Club ID">
+  <title>Cyfrowy Identyfikator Klubowy</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body {
+      margin: 0;
+      background-color: #0b0e14;
+      color: #f1f5f9;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 45px 16px 24px;
+    }
+    .container { width: 100%; max-width: 380px; }
+
+    /* Ekran pierwszego logowania / konfiguracji */
+    .setup-box {
+      background: #161b26;
+      border: 1px solid #2a3241;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    }
+    .setup-box h2 { margin-top: 0; font-size: 20px; text-align: center; color: #38bdf8; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 5px; }
+    .field input {
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid #334155; background: #0f172a; color: white; font-size: 15px;
+    }
+    .btn {
+      width: 100%; padding: 13px; border: none; border-radius: 12px;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      color: #0b0e14; font-weight: 700; font-size: 16px; cursor: pointer; margin-top: 8px;
+    }
+
+    /* Widok właściwej karty */
+    .card-view { display: none; }
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px; font-size: 13px; color: #94a3b8;
+    }
+    .live-clock { font-variant-numeric: tabular-nums; color: #38bdf8; font-weight: 600; }
+
+    .id-card {
+      background: linear-gradient(145deg, #161e2e 0%, #0f1522 100%);
+      border: 1px solid #293548;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+      position: relative;
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; margin-bottom: 16px;
+    }
+    .club-title { font-weight: 800; letter-spacing: 1px; font-size: 15px; color: #e2e8f0; }
+
+    /* Animowana falująca wstęga / emblemat */
+    .wave-badge {
+      width: 44px; height: 28px; border-radius: 6px;
+      background: linear-gradient(45deg, #0ea5e9, #6366f1, #ec4899, #0ea5e9);
+      background-size: 300% 300%;
+      animation: waveFlow 3s ease infinite;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    @keyframes waveFlow {
+      0% { background-position: 0% 50%; transform: skewY(-2deg); }
+      50% { background-position: 100% 50%; transform: skewY(2deg); }
+      100% { background-position: 0% 50%; transform: skewY(-2deg); }
+    }
+
+    .main-info { display: flex; gap: 16px; align-items: flex-start; }
+    .avatar {
+      width: 105px; height: 135px; border-radius: 14px; object-fit: cover;
+      border: 2px solid #38bdf8; background: #1e293b; flex-shrink: 0;
+    }
+    .details { flex: 1; }
+    .item { margin-bottom: 10px; }
+    .label { font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
+    .value { font-size: 16px; font-weight: 600; color: #f8fafc; margin-top: 2px; }
+
+    .status-pill {
+      margin-top: 18px; background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399;
+      padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dot {
+      width: 8px; height: 8px; background: #10b981; border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .reset-btn {
+      background: transparent; border: 1px solid #334155; color: #94a3b8;
+      padding: 8px 14px; border-radius: 10px; font-size: 12px; margin-top: 20px; width: 100%; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- KROK 1: Formularz pierwszego uruchomienia -->
+    <div id="setupScreen" class="setup-box">
+      <h2>Konfiguracja Karty VIP</h2>
+      <div class="field">
+        <label>Zdjęcie profilowe</label>
+        <input type="file" id="photoInput" accept="image/*">
+      </div>
+      <div class="field">
+        <label>Imię / Ksywka</label>
+        <input type="text" id="nameInput" placeholder="np. Anna">
+      </div>
+      <div class="field">
+        <label>Nazwisko / Tytuł</label>
+        <input type="text" id="surnameInput" placeholder="np. Królowa Parkietu">
+      </div>
+      <div class="field">
+        <label>Numer członkowski</label>
+        <input type="text" id="idInput" placeholder="np. VIP-2026-01">
+      </div>
+      <div class="field">
+        <label>Poziom dostępu</label>
+        <input type="text" id="roleInput" placeholder="np. Strefa Backstage">
+      </div>
+      <button class="btn" onclick="saveProfile()">Zapisz i otwórz kartę</button>
+    </div>
+
+    <!-- KROK 2: Wygenerowana karta -->
+    <div id="cardScreen" class="card-view">
+      <div class="top-bar">
+        <span>IDENTYFIKATOR CYFROWY</span>
+        <span class="live-clock" id="clock">00:00:00</span>
+      </div>
+
+      <div class="id-card">
+        <div class="card-header">
+          <div class="club-title">NIGHT CLUB PASS</div>
+          <div class="wave-badge"></div>
+        </div>
+
+        <div class="main-info">
+          <img id="displayPhoto" class="avatar" src="" alt="Foto">
+          <div class="details">
+            <div class="item">
+              <div class="label">Imię / Ksywka</div>
+              <div class="value" id="displayName">-</div>
+            </div>
+            <div class="item">
+              <div class="label">Tytuł</div>
+              <div class="value" id="displaySurname">-</div>
+            </div>
+            <div class="item">
+              <div class="label">Numer karty</div>
+              <div class="value" id="displayId">-</div>
+            </div>
+            <div class="item">
+              <div class="label">Uprawnienia</div>
+              <div class="value" id="displayRole">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="status-pill">
+          <span class="dot"></span>
+          <span>Przepustka aktywna i zweryfikowana</span>
+        </div>
+      </div>
+
+      <button class="reset-btn" onclick="resetProfile()">Edytuj dane / Wyloguj</button>
+    </div>
+  </div>
+
+  <script>
+    let uploadedImage = "";
+
+    document.getElementById('photoInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        uploadedImage = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function saveProfile() {
+      const data = {
+        photo: uploadedImage || localStorage.getItem('vip_photo') || '',
+        name: document.getElementById('nameInput').value || 'Gość VIP',
+        surname: document.getElementById('surnameInput').value || 'Imprezowicz',
+        id: document.getElementById('idInput').value || 'VIP-001',
+        role: document.getElementById('roleInput').value || 'All Inclusive'
+      };
+
+      localStorage.setItem('vip_profile', JSON.stringify(data));
+      if (uploadedImage) localStorage.setItem('vip_photo', uploadedImage);
+      showCard(data);
+    }
+
+    function showCard(data) {
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('cardScreen').style.display = 'block';
+
+      document.getElementById('displayName').innerText = data.name;
+      document.getElementById('displaySurname').innerText = data.surname;
+      document.getElementById('displayId').innerText = data.id;
+      document.getElementById('displayRole').innerText = data.role;
+      if (data.photo) {
+        document.getElementById('displayPhoto').src = data.photo;
+      }
+    }
+
+    function resetProfile() {
+      localStorage.removeItem('vip_profile');
+      document.getElementById('cardScreen').style.display = 'none';
+      document.getElementById('setupScreen').style.display = 'block';
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').innerText = now.toLocaleTimeString('pl-PL');
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Automatyczne wczytanie zapisanych danych przy kolejnym otwarciu
+    window.onload = function() {
+      const saved = localStorage.getItem('vip_profile');
+      if (saved) {
+        showCard(JSON.parse(saved));
+      }
+    };
+  </script>
+</body>
+</html>
